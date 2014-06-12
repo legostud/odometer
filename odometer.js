@@ -78,7 +78,8 @@
     val *= Math.pow(10, precision);
     val += 0.5;
     val = Math.floor(val);
-    return val /= Math.pow(10, precision);
+    val /= Math.pow(10, precision);
+    return val.toFixed(precision);
   };
 
   truncate = function(val) {
