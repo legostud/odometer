@@ -1,5 +1,5 @@
 (function() {
-  var COUNT_FRAMERATE, COUNT_MS_PER_FRAME, DIGIT_FORMAT, DIGIT_HTML, DIGIT_SPEEDBOOST, DURATION, FORMAT_MARK_HTML, FORMAT_PARSER, FRAMERATE, FRAMES_PER_VALUE, MS_PER_FRAME, MutationObserver, Odometer, RIBBON_HTML, TRANSITION_END_EVENTS, TRANSITION_SUPPORT, VALUE_HTML, addClass, createFromHTML, fractionalPart, now, removeClass, requestAnimationFrame, round, transitionCheckStyles, trigger, truncate, wrapJQuery, _jQueryWrapped, _old, _ref, _ref1,
+  var COUNT_FRAMERATE, COUNT_MS_PER_FRAME, DIGIT_FORMAT, DIGIT_HTML, DIGIT_SPEEDBOOST, DURATION, FORMAT_MARK_HTML, FORMAT_PARSER, FRAMERATE, FRAMES_PER_VALUE, MS_PER_FRAME, SHOW_TRAILING_ZEROS, MutationObserver, Odometer, RIBBON_HTML, TRANSITION_END_EVENTS, TRANSITION_SUPPORT, VALUE_HTML, addClass, createFromHTML, fractionalPart, now, removeClass, requestAnimationFrame, round, transitionCheckStyles, trigger, truncate, wrapJQuery, _jQueryWrapped, _old, _ref, _ref1,
     __slice = [].slice;
 
   VALUE_HTML = '<span class="odometer-value"></span>';
@@ -10,7 +10,9 @@
 
   FORMAT_MARK_HTML = '<span class="odometer-formatting-mark"></span>';
 
-  DIGIT_FORMAT = '(,ddd).dd';
+  DIGIT_FORMAT = '(,ddd).d';
+
+  SHOW_TRAILING_ZEROS = true,
 
   FORMAT_PARSER = /^\(?([^)]*)\)?(?:(.)(d+))?$/;
 
@@ -79,7 +81,10 @@
     val += 0.5;
     val = Math.floor(val);
     val /= Math.pow(10, precision);
-    return val.toFixed(precision);
+    if(SHOW_TRAILING_ZEROS){
+		val = val.toFixed(precision);
+    }
+    return val;
   };
 
   truncate = function(val) {
@@ -279,7 +284,7 @@
     };
 
     Odometer.prototype.render = function(value) {
-      var classes, cls, match, newClasses, theme, _i, _len;
+      var classes, cls, digit, match, newClasses, theme, wholePart, _i, _j, _len, _len1, _ref;
       if (value == null) {
         value = this.value;
       }
@@ -314,38 +319,17 @@
       }
       this.el.className = newClasses.join(' ');
       this.ribbons = {};
-      this.formatDigits(value);
-      return this.startWatchingMutations();
-    };
-
-    Odometer.prototype.formatDigits = function(value) {
-      var digit, valueDigit, valueString, wholePart, _i, _j, _len, _len1, _ref, _ref1;
       this.digits = [];
-      if (this.options.formatFunction) {
-        valueString = this.options.formatFunction(value);
-        _ref = valueString.split('').reverse();
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          valueDigit = _ref[_i];
-          if (valueDigit.match(/0-9/)) {
-            digit = this.renderDigit();
-            digit.querySelector('.odometer-value').innerHTML = valueDigit;
-            this.digits.push(digit);
-            this.insertDigit(digit);
-          } else {
-            this.addSpacer(valueDigit);
-          }
+      wholePart = !this.format.precision || false;
+      _ref = value.toString().split('').reverse();
+      for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
+        digit = _ref[_j];
+        if (digit === '.') {
+          wholePart = true;
         }
-      } else {
-        wholePart = !this.format.precision || !fractionalPart(value) || false;
-        _ref1 = value.toString().split('').reverse();
-        for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-          digit = _ref1[_j];
-          if (digit === '.') {
-            wholePart = true;
-          }
-          this.addDigit(digit, wholePart);
-        }
+        this.addDigit(digit, wholePart);
       }
+      return this.startWatchingMutations();
     };
 
     Odometer.prototype.update = function(newValue) {
@@ -484,10 +468,14 @@
     Odometer.prototype.getFractionalDigitCount = function() {
       var i, parser, parts, value, values, _i, _len;
       values = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-      parser = /^\-?\d*\.(\d*?)0*$/;
+      if(SHOW_TRAILING_ZEROS){
+        parser = /^\-?\d*\.(\d*?)*$/;
+      } else {
+        parser = /^\-?\d*\.(\d*?)0*$/;
+      }
       for (i = _i = 0, _len = values.length; _i < _len; i = ++_i) {
         value = values[i];
-        values[i] = value.toString();
+        values[i] = parseFloat(value).toFixed(this.format.precision);
         parts = parser.exec(values[i]);
         if (parts == null) {
           values[i] = 0;
